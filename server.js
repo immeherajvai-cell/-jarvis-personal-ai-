@@ -20,6 +20,7 @@ app.post('/api/chat', async (req, res) => {
     const response = await model.generateContent(prompt);
     res.json({ reply: response.text() });
   } catch (error) {
+    console.error(error);
     res.status(500).json({ error: 'failed to generate response' });
   }
 });
