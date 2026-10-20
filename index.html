@@ -220,7 +220,7 @@
             Window.speechSynthesis.speak(utterance);
         });
 
-        Const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
         if (!recognition) {
             AddMessage("Voice Input এই ব্রাউজারে সমর্থিত নয়। Chrome-এ চেষ্টা করো বা টাইপ করো।", "jarvis");
