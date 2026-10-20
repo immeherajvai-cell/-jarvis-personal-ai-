@@ -222,7 +222,7 @@
 
         const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-        if (!recognition) {
+        if (!Recognition) {
             AddMessage("Voice Input এই ব্রাউজারে সমর্থিত নয়। Chrome-এ চেষ্টা করো বা টাইপ করো।", "jarvis");
         } else {
             const recognitionInstance = new Recognition();
