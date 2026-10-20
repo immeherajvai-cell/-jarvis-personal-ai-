@@ -210,12 +210,12 @@
         });
 
         Document.getElementById("speakBtn").addEventListener("click", () => {
-            If (!("speechSynthesis" in window)) {
+            if (!("speechSynthesis" in window)) {
                 AddMessage("এই ব্রাউজারে Voice Reply সমর্থিত নয়।", "jarvis");
                 Return;
             }
             Window.speechSynthesis.cancel();
-            Const utterance = new SpeechSynthesisUtterance(lastReply);
+            const utterance = new SpeechSynthesisUtterance(lastReply);
             Utterance.lang = "bn-BD";
             Window.speechSynthesis.speak(utterance);
         });
