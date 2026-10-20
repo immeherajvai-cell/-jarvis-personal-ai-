@@ -1,9 +1,9 @@
 require('dotenv').config();
 const express = require('express');
-const { GoogleGenAI } = require('@google/genai');
+const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
-const ai = new GoogleGenAI();
+const ai = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.static(__dirname));
@@ -16,11 +16,9 @@ app.get('/', (req, res) => {
 app.post('/api/chat', async (req, res) => {
   const { prompt } = req.body;
   try {
-    const response = await ai.models.generateContent({
-      model: 'gemini-1.5-flash',
-      contents: [prompt],
-    });
-    res.json({ reply: response.text });
+    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const response = await model.generateContent(prompt);
+    res.json({ reply: response.text() });
   } catch (error) {
     res.status(500).json({ error: 'failed to generate response' });
   }
