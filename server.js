@@ -16,7 +16,7 @@ app.get('/', (req, res) => {
 app.post('/api/chat', async (req, res) => {
   const { prompt } = req.body;
   try {
-    const model = ai.getGenerativeModel({ model: 'gemini-1.5-flash' });
+    const model = ai.getGenerativeModel({ model: 'gemini-pro' });
     const response = await model.generateContent(prompt);
     res.json({ reply: response.text() });
   } catch (error) {
