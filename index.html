@@ -14,7 +14,7 @@
             color: #f3f7ff;
             background: radial-gradient(circle at top, #172b50, #080d1c 65%);
             display: flex;
-            justify-content: center;
+            justify-content:center;
         }
         .app {
             width: 100%;
@@ -191,7 +191,7 @@
                 const res = await fetch("https://jarvis-personal-ai.onrender.com/api/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
-                    Body: JSON.stringify({ prompt: text })
+                    body: JSON.stringify({ prompt: text })
                 });
                 const data = await res.json();
                 const aiReply = data.reply || "No response generated";
