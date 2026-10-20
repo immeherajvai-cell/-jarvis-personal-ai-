@@ -225,7 +225,7 @@
         if (!recognition) {
             AddMessage("Voice Input এই ব্রাউজারে সমর্থিত নয়। Chrome-এ চেষ্টা করো বা টাইপ করো।", "jarvis");
         } else {
-            Const recognitionInstance = new Recognition();
+            const recognitionInstance = new Recognition();
             RecognitionInstance.lang = "bn-BD";
             RecognitionInstance.onresult = (event) => {
                 Input.value = event.results[0][0].transcript;
