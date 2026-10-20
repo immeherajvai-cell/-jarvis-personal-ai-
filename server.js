@@ -20,7 +20,7 @@ app.post('/api/chat', async (req, res) => {
       model: 'gemini-1.5-flash',
       contents: [prompt],
     });
-    res.json({ reply: response.text() });
+    res.json({ reply: response.text });
   } catch (error) {
     res.status(500).json({ error: 'failed to generate response' });
   }
