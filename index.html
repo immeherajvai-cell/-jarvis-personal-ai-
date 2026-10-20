@@ -196,22 +196,22 @@
                 const data = await res.json();
                 const aiReply = data.reply || "No response generated";
                 LastReply = aiReply;
-                AddMessage(aiReply, "jarvis");
+                addMessage(aiReply, "jarvis");
             } catch (err) {
                 console.error(err);
-                AddMessage("Error connecting to server.", "jarvis");
+                addMessage("Error connecting to server.", "jarvis");
             }
         });
 
         document.getElementById("clearBtn").addEventListener("click", () => {
             Chat.replaceChildren();
             LastReply = "Hey boss! বলুন, কীভাবে সাহায্য করতে পারি?";
-            AddMessage(lastReply, "jarvis");
+            addMessage(lastReply, "jarvis");
         });
 
         document.getElementById("speakBtn").addEventListener("click", () => {
             if (!("speechSynthesis" in window)) {
-                AddMessage("এই ব্রাউজারে Voice Reply সমর্থিত নয়।", "jarvis");
+                addMessage("এই ব্রাউজারে Voice Reply সমর্থিত নয়।", "jarvis");
                 Return;
             }
             Window.speechSynthesis.cancel();
@@ -220,23 +220,23 @@
             Window.speechSynthesis.speak(utterance);
         });
 
-        const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+        const recognition = window.Speechrecognition || window.webkitSpeechRecognition;
 
-        if (!Recognition) {
-            AddMessage("Voice Input এই ব্রাউজারে সমর্থিত নয়। Chrome-এ চেষ্টা করো বা টাইপ করো।", "jarvis");
+        if (!recognition) {
+            addMessage("Voice Input এই ব্রাউজারে সমর্থিত নয়। Chrome-এ চেষ্টা করো বা টাইপ করো।", "jarvis");
         } else {
-            const RecognitionInstance = new Recognition();
-            RecognitionInstance.lang = "bn-BD";
-            RecognitionInstance.onresult = (event) => {
+            const recognitionInstance = new recognition();
+            recognitionInstance.lang = "bn-BD";
+            recognitionInstance.onresult = (event) => {
                 Input.value = event.results[0][0].transcript;
                 Input.focus();
             };
-            RecognitionInstance.onerror = () => {
-                AddMessage("ভয়েস নেওয়া যায়নি। আবার চেষ্টা করো।", "jarvis");
+            recognitionInstance.onerror = () => {
+                addMessage("ভয়েস নেওয়া যায়নি। আবার চেষ্টা করো।", "jarvis");
             };
 
-            Document.getElementById("voiceBtn").addEventListener("click", () => {
-                RecognitionInstance.start();
+            document.getElementById("voiceBtn").addEventListener("click", () => {
+                recognitionInstance.start();
             });
         }
     </script>
