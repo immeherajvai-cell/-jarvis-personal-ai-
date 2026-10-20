@@ -188,7 +188,7 @@
             input.value = "";
 
             try {
-                const res = await fetch("/api/chat", {
+                const res = await fetch("https://jarvis-personal-ai.onrender.com/api/chat", {
                     method: "POST",
                     headers: { "Content-Type": "application/json" },
                     Body: JSON.stringify({ prompt: text })
