@@ -1,290 +1,244 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <meta name="theme-color" content="#080d1c">
-  <title>JARVIS | Personal AI</title>
-  <style>
-    * { box-sizing: border-box; }
-
-    body {
-      margin: 0;
-      min-height: 100vh;
-      font-family: Arial, sans-serif;
-      color: #f3f7ff;
-      background: radial-gradient(circle at top, #172b50, #080d1c 65%);
-      display: flex;
-      justify-content: center;
-      padding: 24px 14px;
-    }
-
-    .app {
-      width: 100%;
-      max-width: 650px;
-      display: flex;
-      flex-direction: column;
-      gap: 18px;
-    }
-
-    header { text-align: center; padding: 18px 0; }
-
-    .orb {
-      width: 82px;
-      height: 82px;
-      margin: 0 auto 15px;
-      border-radius: 50%;
-      background: radial-gradient(circle, #c6ffff, #35b9ff 38%, #2450a5 70%);
-      box-shadow: 0 0 28px #35b9ff99, 0 0 65px #246bff44;
-    }
-
-    h1 {
-      margin: 0;
-      letter-spacing: 7px;
-      font-size: 30px;
-      color: #8eeaff;
-    }
-
-    .subtitle { color: #a9b9d5; margin-top: 9px; }
-
-    .status {
-      display: inline-block;
-      margin-top: 15px;
-      padding: 7px 12px;
-      border: 1px solid #294a70;
-      border-radius: 20px;
-      color: #9ee7ff;
-      font-size: 12px;
-    }
-
-    .panel {
-      background: #111b2de8;
-      border: 1px solid #263955;
-      border-radius: 18px;
-      padding: 18px;
-    }
-
-    .panel h2 { font-size: 16px; margin-top: 0; }
-
-    #chat {
-      min-height: 210px;
-      max-height: 42vh;
-      overflow-y: auto;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    .message {
-      padding: 12px 14px;
-      border-radius: 13px;
-      line-height: 1.5;
-      overflow-wrap: anywhere;
-    }
-
-    .jarvis {
-      background: #1a2b43;
-      border: 1px solid #2b4765;
-      align-self: flex-start;
-    }
-
-    .user {
-      background: #174b69;
-      align-self: flex-end;
-    }
-
-    .controls {
-      display: flex;
-      gap: 9px;
-      margin-top: 14px;
-    }
-
-    input {
-      min-width: 0;
-      flex: 1;
-      padding: 14px;
-      border-radius: 12px;
-      border: 1px solid #344a68;
-      background: #080f1e;
-      color: white;
-      font-size: 15px;
-    }
-
-    button {
-      cursor: pointer;
-      border: 0;
-      border-radius: 12px;
-      padding: 12px 15px;
-      color: #061321;
-      background: #79ddff;
-      font-weight: bold;
-    }
-
-    button:active { transform: scale(.97); }
-
-    .secondary {
-      color: #dceaff;
-      background: #263953;
-    }
-
-    .actions {
-      display: flex;
-      flex-wrap: wrap;
-      gap: 10px;
-      margin-top: 14px;
-    }
-
-    .note {
-      color: #9daec7;
-      font-size: 12px;
-      line-height: 1.6;
-    }
-
-    footer {
-      text-align: center;
-      color: #7387a5;
-      font-size: 12px;
-      padding: 8px;
-    }
-
-    @media (max-width: 420px) {
-      .controls { flex-wrap: wrap; }
-      .controls input { flex-basis: 100%; }
-      h1 { font-size: 26px; }
-    }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#080d1c">
+    <title>JARVIS | Personal AI</title>
+    <style>
+        * { box-sizing: border-box; }
+        body {
+            margin: 0;
+            min-height: 100vh;
+            font-family: Arial, sans-serif;
+            color: #f3f7ff;
+            background: radial-gradient(circle at top, #172b50, #080d1c 65%);
+            display: flex;
+            justify-content: center;
+        }
+        .app {
+            width: 100%;
+            max-width: 650px;
+            display: flex;
+            flex-direction: column;
+            gap: 18px;
+            padding: 24px 14px;
+        }
+        header { text-align: center; padding: 18px 0; }
+        .orb {
+            width: 82px;
+            height: 82px;
+            margin: 0 auto 15px;
+            border-radius: 50%;
+            background: radial-gradient(circle, #c6ffff, #35b9ff 38%, #246bff 70%);
+            box-shadow: 0 0 28px #35b9ff99, 0 0 65px #246bff44;
+        }
+        h1 {
+            margin: 0;
+            letter-spacing: 7px;
+            font-size: 30px;
+            color: #8eeaff;
+        }
+        .subtitle { color: #a9b9d5; margin-top: 9px; }
+        .status {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 7px 12px;
+            border: 1px solid #294a70;
+            border-radius: 20px;
+            color: #9ee7ff;
+            font-size: 12px;
+        }
+        .panel {
+            background: #111b2de8;
+            border: 1px solid #263955;
+            border-radius: 18px;
+            padding: 18px;
+        }
+        .panel h2 { font-size: 16px; margin-top: 0; }
+        #chat {
+            min-height: 210px;
+            max-height: 42vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+        .message {
+            padding: 12px 14px;
+            border-radius: 13px;
+            line-height: 1.5;
+            overflow-wrap: anywhere;
+        }
+        .jarvis {
+            background: #1a2b43;
+            border: 1px solid #2b4765;
+            align-self: flex-start;
+        }
+        .user {
+            background: #174b69;
+            align-self: flex-end;
+        }
+        .controls {
+            display: flex;
+            gap: 9px;
+            margin-top: 14px;
+        }
+        Input {
+            min-width: 0;
+            flex: 1;
+            padding: 14px;
+            border-radius: 12px;
+            Border: 1px solid #344a68;
+            Background: #080f1e;
+            Color: white;
+            Font-size: 15px;
+        }
+        Button {
+            Cursor: pointer;
+            Border: 0;
+            Border-radius: 12px;
+            Padding: 12px 15px;
+            Color: #061321;
+            Background: #79ddff;
+            Font-weight: bold;
+        }
+        Button:active { transform: scale(.97); }
+        .secondary {
+            Color: #dceaff;
+            Background: #263953;
+        }
+        .actions {
+            Display: flex;
+            Flex-wrap: wrap;
+            Gap: 10px;
+            Margin-top: 14px;
+        }
+        .note {
+            Color: #9daec7;
+            Font-size: 12px;
+            Line-height: 1.6;
+        }
+        Footer {
+            Text-align: center;
+            Color: #7387a5;
+            Font-size: 12px;
+            Padding: 8px;
+        }
+        @media (max-width: 420px) {
+            .controls { flex-wrap: wrap; }
+            .controls input { flex-basis: 100%; }
+            H1 { font-size: 26px; }
+        }
+    </style>
 </head>
 <body>
-  <main class="app">
-    <header>
-      <div class="orb"></div>
-      <h1>JARVIS</h1>
-      <div class="subtitle">Your Personal AI Assistant</div>
-      <div class="status">● Interface Ready</div>
-    </header>
+    <main class="app">
+        <header>
+            <div class="orb"></div>
+            <h1>JARVIS</h1>
+            <div class="subtitle">Your Personal AI Assistant</div>
+            <div class="status">Interface Ready</div>
+        </header>
 
-    <section class="panel">
-      <h2>💬 Talk to JARVIS</h2>
-      <div id="chat" aria-live="polite">
-        <div class="message jarvis">
-          Hey boss! 👋 আমি JARVIS। কীভাবে সাহায্য করতে পারি?
-          <br><br>
-          এটি আমার প্রথম সংস্করণ। এখনো অনলাইন AI সংযুক্ত হয়নি।
-        </div>
-      </div>
+        <section class="panel">
+            <h2>Talk to JARVIS</h2>
+            <div id="chat" aria-live="polite">
+                <div class="message jarvis">
+                    Hey boss! আমি JARVIS। কীভাবে সাহায্য করতে পারি?
+                </div>
+            </div>
+            
+            <form id="chatForm" class="controls">
+                <input id="userInput" type="text" placeholder="Type your message..." autocomplete="off">
+                <button type="submit">Send</button>
+            </form>
 
-      <form id="chatForm" class="controls">
-        <input id="userInput" type="text"
-          placeholder="Type your message..."
-          aria-label="Your message" autocomplete="off">
-        <button type="submit">Send</button>
-      </form>
+            <div class="actions">
+                <button type="button" class="secondary" id="voiceBtn">Voice Input</button>
+                <button type="button" class="secondary" id="speakBtn">Voice Reply</button>
+                <button type="button" class="secondary" id="clearBtn">Clear Chat</button>
+            </div>
+        </section>
 
-      <div class="actions">
-        <button type="button" class="secondary" id="voiceBtn">
-          🎙️ Voice Input
-        </button>
-        <button type="button" class="secondary" id="speakBtn">
-          🔊 Voice Reply
-        </button>
-        <button type="button" class="secondary" id="clearBtn">
-          🗑️ Clear Chat
-        </button>
-      </div>
+        <p class="note">Voice features depend on your browser and device. AI answers, web search, and saved memory will be added in later versions.</p>
 
-      <p class="note">
-        Voice features depend on your browser and device.
-        AI answers, web search, and saved memory will be added
-        in later versions.
-      </p>
-    </section>
+        <footer>JARVIS Personal AI - Version 1.0</footer>
+    </main>
 
-    <footer>JARVIS Personal AI · Version 1.0</footer>
-  </main>
+    <script>
+        const chat = document.getElementById("chat");
+        const input = document.getElementById("userInput");
+        let lastReply = "Hey boss! বলুন, কীভাবে সাহায্য করতে পারি?";
 
-  <script>
-    const chat = document.getElementById("chat");
-    const input = document.getElementById("userInput");
-    let lastReply = "Hey boss! বলুন, কীভাবে সাহায্য করতে পারি?";
+        function addMessage(text, type) {
+            const message = document.createElement("div");
+            message.className = "message " + type;
+            message.textContent = text;
+            chat.appendChild(message);
+            chat.scrollTop = chat.scrollHeight;
+        }
 
-    function addMessage(text, type) {
-      const message = document.createElement("div");
-      message.className = "message " + type;
-      message.textContent = text;
-      chat.appendChild(message);
-      chat.scrollTop = chat.scrollHeight;
-    }
+        document.getElementById("chatForm").addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const text = input.value.trim();
+            if (!text) return;
 
-    function replyTo(text) {
-      const q = text.toLowerCase();
-      if (q.includes("hello") || q.includes("হ্যালো") ||
-          q.includes("হাই")) {
-        return "Hey boss! 👋 আমি এখানে আছি।";
-      }
-      if (q.includes("তোমার নাম") || q.includes("your name")) {
-        return "আমার নাম JARVIS, তোমার Personal AI Assistant।";
-      }
-      if (q.includes("সময়") || q.includes("time")) {
-        return "সঠিক সময় জানতে তোমার ডিভাইসের ঘড়ি দেখো।";
-      }
-      if (q.includes("তুমি কে") || q.includes("who are you")) {
-        return "আমি JARVIS-এর প্রথম পরীক্ষামূলক সংস্করণ।";
-      }
-      return "Hey boss! তোমার মেসেজ পেয়েছি। আসল AI সংযুক্ত হলে আমি আরও ভালোভাবে উত্তর দিতে পারব।";
-    }
+            addMessage(text, "user");
+            input.value = "";
 
-    document.getElementById("chatForm").addEventListener("submit", e => {
-      e.preventDefault();
-      const text = input.value.trim();
-      if (!text) return;
+            try {
+                const res = await fetch("/api/chat", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    Body: JSON.stringify({ prompt: text })
+                });
+                Const data = await res.json();
+                Const aiReply = data.reply || "No response generated";
+                LastReply = aiReply;
+                AddMessage(aiReply, "jarvis");
+            } catch (err) {
+                Console.error(err);
+                AddMessage("Error connecting to server.", "jarvis");
+            }
+        });
 
-      addMessage(text, "user");
-      input.value = "";
+        Document.getElementById("clearBtn").addEventListener("click", () => {
+            Chat.replaceChildren();
+            LastReply = "Hey boss! বলুন, কীভাবে সাহায্য করতে পারি?";
+            AddMessage(lastReply, "jarvis");
+        });
 
-      lastReply = replyTo(text);
-      addMessage(lastReply, "jarvis");
-    });
+        Document.getElementById("speakBtn").addEventListener("click", () => {
+            If (!("speechSynthesis" in window)) {
+                AddMessage("এই ব্রাউজারে Voice Reply সমর্থিত নয়।", "jarvis");
+                Return;
+            }
+            Window.speechSynthesis.cancel();
+            Const utterance = new SpeechSynthesisUtterance(lastReply);
+            Utterance.lang = "bn-BD";
+            Window.speechSynthesis.speak(utterance);
+        });
 
-    document.getElementById("clearBtn").addEventListener("click", () => {
-      chat.replaceChildren();
-      lastReply = "Hey boss! বলুন, কীভাবে সাহায্য করতে পারি?";
-      addMessage(lastReply, "jarvis");
-    });
+        Const Recognition = window.SpeechRecognition || window.webkitSpeechRecognition;
 
-    document.getElementById("speakBtn").addEventListener("click", () => {
-      if (!("speechSynthesis" in window)) {
-        addMessage("এই ব্রাউজারে Voice Reply সমর্থিত নয়।", "jarvis");
-        return;
-      }
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(lastReply);
-      utterance.lang = "bn-BD";
-      window.speechSynthesis.speak(utterance);
-    });
+        If (!recognition) {
+            AddMessage("Voice Input এই ব্রাউজারে সমর্থিত নয়। Chrome-এ চেষ্টা করো বা টাইপ করো।", "jarvis");
+        } else {
+            Const recognitionInstance = new Recognition();
+            RecognitionInstance.lang = "bn-BD";
+            RecognitionInstance.onresult = (event) => {
+                Input.value = event.results[0][0].transcript;
+                Input.focus();
+            };
+            RecognitionInstance.onerror = () => {
+                AddMessage("ভয়েস নেওয়া যায়নি। আবার চেষ্টা করো।", "jarvis");
+            };
 
-    document.getElementById("voiceBtn").addEventListener("click", () => {
-      const Recognition =
-        window.SpeechRecognition || window.webkitSpeechRecognition;
-
-      if (!Recognition) {
-        addMessage(
-          "Voice Input এই ব্রাউজারে সমর্থিত নয়। Chrome-এ চেষ্টা করো অথবা টাইপ করো।",
-          "jarvis"
-        );
-        return;
-      }
-
-      const recognition = new Recognition();
-      recognition.lang = "bn-BD";
-      recognition.onresult = event => {
-        input.value = event.results[0][0].transcript;
-        input.focus();
-      };
-      recognition.onerror = () => {
-        addMessage("ভয়েস নেওয়া যায়নি। আবার চেষ্টা করো।", "jarvis");
-      };
-      recognition.start();
-    });
-  </script>
+            Document.getElementById("voiceBtn").addEventListener("click", () => {
+                RecognitionInstance.start();
+            });
+        }
+    </script>
 </body>
 </html>
