@@ -193,7 +193,7 @@
                     headers: { "Content-Type": "application/json" },
                     Body: JSON.stringify({ prompt: text })
                 });
-                const data = `await` res.json();
+                const data = await res.json();
                 const aiReply = data.reply || "No response generated";
                 LastReply = aiReply;
                 AddMessage(aiReply, "jarvis");
