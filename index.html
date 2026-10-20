@@ -198,18 +198,18 @@
                 LastReply = aiReply;
                 AddMessage(aiReply, "jarvis");
             } catch (err) {
-                Console.error(err);
+                console.error(err);
                 AddMessage("Error connecting to server.", "jarvis");
             }
         });
 
-        Document.getElementById("clearBtn").addEventListener("click", () => {
+        document.getElementById("clearBtn").addEventListener("click", () => {
             Chat.replaceChildren();
             LastReply = "Hey boss! বলুন, কীভাবে সাহায্য করতে পারি?";
             AddMessage(lastReply, "jarvis");
         });
 
-        Document.getElementById("speakBtn").addEventListener("click", () => {
+        document.getElementById("speakBtn").addEventListener("click", () => {
             if (!("speechSynthesis" in window)) {
                 AddMessage("এই ব্রাউজারে Voice Reply সমর্থিত নয়।", "jarvis");
                 Return;
