@@ -20,7 +20,7 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ error: 'prompt is required' });
   }
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-1.5-pro' });
+   const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
     const result = await model.generateContent(prompt);
     res.json({ reply: result.response.text() });
   } catch (error) {
