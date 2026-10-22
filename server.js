@@ -13,6 +13,27 @@ app.use(express.static(path.join(__dirname,`public`)));
 app.get('/', (req, res) => {
  res.sendFile(path.join(__dirname,`public`, 'index.html'));
 });
+const MODELS = ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-flash-lite-latest'];
+
+async function generateWithRetry(prompt) {
+  for (const name of MODELS) {
+    for (let attempt = 1; attempt <= 2; attempt++) {
+      try {
+        const model = genAI.getGenerativeModel({ model: name });
+        const result = await model.generateContent(prompt);
+        return result.response.text();
+      } catch (error) {
+        if (error.status === 404) break;
+        if (error.status === 503 || error.status === 429) {
+          await new Promise(r => setTimeout(r, 1500 * attempt));
+          continue;
+        }
+        throw error;
+      }
+    }
+  }
+  throw new Error('All models busy');
+}
 
 app.post('/api/chat', async (req, res) => {
   const { prompt } = req.body;
@@ -20,14 +41,14 @@ app.post('/api/chat', async (req, res) => {
     return res.status(400).json({ error: 'prompt is required' });
   }
   try {
-   const model = genAI.getGenerativeModel({ model: "gemini-flash-latest" });
-    const result = await model.generateContent(prompt);
-    res.json({ reply: result.response.text() });
+    const reply = await generateWithRetry(prompt);
+    res.json({ reply });
   } catch (error) {
     console.error(error);
-    res.status(500).json({ error: 'failed to generate response' });
+    res.status(503).json({ error: 'AI এখন ব্যস্ত, একটু পরে আবার চেষ্টা করুন' });
   }
 });
+
 
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
