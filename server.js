@@ -8,10 +8,10 @@ const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
-app.use(express.static(path.join(__dirname)));
+app.use(express.static(path.join(__dirname,`public`)));
 
 app.get('/', (req, res) => {
- res.sendFile(path.join(__dirname, 'index.html'));
+ res.sendFile(path.join(__dirname,`public`, 'index.html'));
 });
 
 app.post('/api/chat', async (req, res) => {
