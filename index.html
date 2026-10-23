@@ -989,8 +989,24 @@
         });
 
         if ("serviceWorker" in navigator) {
+            // নতুন SW দায়িত্ব নিলে পেজ একবার নিজে রিলোড হবে, ফলে নতুন ভার্সন সাথে সাথে দেখা যাবে
+            let reloaded = false;
+            const hadController = !!navigator.serviceWorker.controller;
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+                if (!hadController || reloaded) return;
+                reloaded = true;
+                location.reload();
+            });
             window.addEventListener("load", () => {
-                navigator.serviceWorker.register("sw.js").catch(console.error);
+                navigator.serviceWorker
+                    .register("sw.js", { updateViaCache: "none" })
+                    .then((reg) => {
+                        reg.update();
+                        document.addEventListener("visibilitychange", () => {
+                            if (!document.hidden) reg.update();
+                        });
+                    })
+                    .catch(console.error);
             });
         }
     </script>
