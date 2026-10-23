@@ -4,6 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="theme-color" content="#080d1c">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" type="image/png" href="icons/icon-192.png">
+    <link rel="apple-touch-icon" href="icons/icon-192.png">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-title" content="JARVIS">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>JARVIS | Personal AI</title>
     <style>
         * { box-sizing: border-box; }
@@ -39,8 +46,15 @@
             background: radial-gradient(circle, #ffe0e0, #ff6b6b 38%, #d62839 70%);
             box-shadow: 0 0 28px #ff6b6b99, 0 0 65px #d6283944;
         }
+        .orb.cmd {
+            animation: pulse 2.4s ease-in-out infinite;
+            background: radial-gradient(circle, #fff4c6, #ffc83d 38%, #d98b00 70%);
+            box-shadow: 0 0 28px #ffc83d99, 0 0 65px #d98b0044;
+        }
         .orb.speaking {
             animation: pulse 1.6s ease-in-out infinite;
+            background: radial-gradient(circle, #c6ffff, #35b9ff 38%, #246bff 70%);
+            box-shadow: 0 0 28px #35b9ff99, 0 0 65px #246bff44;
         }
         @keyframes pulse {
             0%, 100% { transform: scale(1); }
@@ -82,6 +96,7 @@
             border-radius: 13px;
             line-height: 1.5;
             overflow-wrap: anywhere;
+            white-space: pre-wrap;
         }
         .jarvis {
             background: #1a2b43;
@@ -92,12 +107,66 @@
             background: #174b69;
             align-self: flex-end;
         }
+        .msg-files {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-top: 8px;
+        }
+        .msg-files img {
+            max-width: 140px;
+            max-height: 140px;
+            border-radius: 10px;
+            display: block;
+        }
+        .msg-files .fchip {
+            font-size: 12px;
+            background: #0f3a54;
+            border-radius: 8px;
+            padding: 5px 8px;
+        }
+        .attach-bar {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            margin-top: 12px;
+        }
+        .chip {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            background: #1a2b43;
+            border: 1px solid #2b4765;
+            border-radius: 12px;
+            padding: 6px 8px;
+            font-size: 12px;
+            max-width: 100%;
+        }
+        .chip img {
+            width: 34px;
+            height: 34px;
+            object-fit: cover;
+            border-radius: 8px;
+        }
+        .chip span {
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 150px;
+        }
+        .chip button {
+            background: transparent;
+            color: #ff9aa5;
+            padding: 0 4px;
+            font-size: 15px;
+            border-radius: 6px;
+        }
         .controls {
             display: flex;
             gap: 9px;
             margin-top: 14px;
         }
-        input {
+        input[type="text"] {
             min-width: 0;
             flex: 1;
             padding: 14px;
@@ -146,6 +215,40 @@
             font-size: 12px;
             padding: 8px;
         }
+        .modal {
+            position: fixed;
+            inset: 0;
+            z-index: 50;
+            background: #05080fee;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            gap: 14px;
+            padding: 16px;
+        }
+        .modal video {
+            width: 100%;
+            max-width: 560px;
+            max-height: 70vh;
+            border-radius: 16px;
+            background: #000;
+            border: 1px solid #263955;
+        }
+        .modal .row {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            justify-content: center;
+        }
+        .help {
+            font-size: 13px;
+            line-height: 1.7;
+        }
+        [hidden] { display: none !important; }
+        @media (display-mode: standalone) {
+            body { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
+        }
         @media (max-width: 420px) {
             .controls { flex-wrap: wrap; }
             .controls input { flex-basis: 100%; }
@@ -170,59 +273,121 @@
                 </div>
             </div>
 
+            <div id="attachBar" class="attach-bar" hidden></div>
+
             <form id="chatForm" class="controls">
                 <input id="userInput" type="text" placeholder="Type your message..." autocomplete="off">
                 <button type="submit">Send</button>
             </form>
 
             <div class="actions">
+                <button type="button" class="secondary" id="installBtn" hidden>📲 Install App</button>
                 <button type="button" class="secondary" id="voiceBtn">🎤 Voice Input</button>
                 <button type="button" class="secondary" id="speakBtn">🔊 Voice Reply: OFF</button>
+                <button type="button" class="secondary" id="uploadBtn">📎 File</button>
+                <button type="button" class="secondary" id="cameraBtn">📷 Camera</button>
+                <button type="button" class="secondary" id="liveBtn">🎧 Live Talk</button>
+                <button type="button" class="secondary" id="cmdBtn">🗣 Voice Commands</button>
                 <button type="button" class="secondary" id="clearBtn">Clear Chat</button>
             </div>
+            <input id="fileInput" type="file" multiple hidden
+                   accept="image/*,.txt,.md,.csv,.json,.xml,.log,.pdf,.doc,.docx,.xls,.xlsx">
         </section>
 
-        <p class="note">Voice Input: বোতাম চাপুন, বলুন, আপনার কথা পাঠিয়ে দেওয়া হবে। Voice Reply চালু থাকলে JARVIS-এর উত্তর জোরে পড়ে শোনানো হবে। Voice features ব্রাউজার ও ডিভাইসের ওপর নির্ভর করে (Chrome সবচেয়ে ভালো)।</p>
+        <p class="note">Voice Input: বোতাম চাপুন, বলুন, কথা পাঠিয়ে দেওয়া হবে। Live Talk: মুখে কথোপকথন চলতে থাকবে। Voice Commands: "জার্ভিস" বলে কমান্ড দিন (যেমন: "জার্ভিস ক্যামেরা খোলো")। সব ভয়েস ফিচার ব্রাউজারের মাইক পারমিশন ও ইন্টারনেট চায় (Chrome সবচেয়ে ভালো)।</p>
 
-        <footer>JARVIS Personal AI - Version 1.1</footer>
+        <footer>JARVIS Personal AI - Version 1.3</footer>
     </main>
 
-    <script>
-        const API_URL = "https://jarvis-personal-ai.onrender.com/api/chat";
-        const VOICE_LANG = "bn-BD";          // বাংলা; ইংরেজির জন্য "en-US"
-        const AUTO_SEND_VOICE = true;        // কথা শেষ হলে নিজে থেকে Send হবে
+    <!-- Camera -->
+    <div id="cameraModal" class="modal" hidden>
+        <video id="cameraVideo" autoplay playsinline muted></video>
+        <div class="row">
+            <button type="button" id="captureBtn">📸 ছবি তোলো</button>
+            <button type="button" class="secondary" id="switchCamBtn">🔄 Switch</button>
+            <button type="button" class="secondary" id="closeCamBtn">✖ Close</button>
+        </div>
+    </div>
 
+    <script>
+        /* =========================================================
+           CONFIG
+        ========================================================= */
+        const API_URL = "https://jarvis-personal-ai.onrender.com/api/chat";
+        const WS_URL = "";                    // ঐচ্ছিক: লাইভ মোডের জন্য WebSocket, যেমন "wss://jarvis-personal-ai.onrender.com/ws"
+        const VOICE_LANG = "bn-BD";           // বাংলা; ইংরেজির জন্য "en-US"
+        const AUTO_SEND_VOICE = true;         // Voice Input শেষে নিজে থেকে Send
+        const WAKE_WORDS = ["jarvis", "জার্ভিস", "জারভিস", "জার্বিস", "জারবিস", "যারভিস", "যার্ভিস"];
+        const MAX_FILES = 5;
+        const MAX_FILE_MB = 8;
+        const MAX_TEXT_CHARS = 20000;
+        const MAX_IMG_DIM = 1280;
+
+        /* =========================================================
+           ELEMENTS & STATE
+        ========================================================= */
         const chat = document.getElementById("chat");
         const input = document.getElementById("userInput");
         const form = document.getElementById("chatForm");
         const voiceBtn = document.getElementById("voiceBtn");
         const speakBtn = document.getElementById("speakBtn");
         const clearBtn = document.getElementById("clearBtn");
+        const uploadBtn = document.getElementById("uploadBtn");
+        const cameraBtn = document.getElementById("cameraBtn");
+        const liveBtn = document.getElementById("liveBtn");
+        const cmdBtn = document.getElementById("cmdBtn");
+        const fileInput = document.getElementById("fileInput");
+        const attachBar = document.getElementById("attachBar");
         const orb = document.getElementById("orb");
         const statusEl = document.getElementById("status");
 
         const GREETING = "Hey boss! বলুন, কীভাবে সাহায্য করতে পারি?";
         let lastReply = GREETING;
         let voiceReplyOn = false;
-        let isListening = false;
+        let attachments = [];
+        let sending = false;
+        let mode = null;          // null | "input" | "live" | "command"
 
         function setStatus(text) { statusEl.textContent = text; }
+        function idleStatus() {
+            if (mode === "live") return "Live: Listening...";
+            if (mode === "command") return "Say 'Jarvis'...";
+            return "Interface Ready";
+        }
 
-        function addMessage(text, type) {
+        function addMessage(text, type, files) {
             const message = document.createElement("div");
             message.className = "message " + type;
             message.textContent = text;
+            if (files && files.length) {
+                const wrap = document.createElement("div");
+                wrap.className = "msg-files";
+                files.forEach(f => {
+                    if (f.kind === "image") {
+                        const img = document.createElement("img");
+                        img.src = f.dataUrl;
+                        img.alt = f.name;
+                        wrap.appendChild(img);
+                    } else {
+                        const c = document.createElement("span");
+                        c.className = "fchip";
+                        c.textContent = "📄 " + f.name;
+                        wrap.appendChild(c);
+                    }
+                });
+                message.appendChild(wrap);
+            }
             chat.appendChild(message);
             chat.scrollTop = chat.scrollHeight;
         }
 
-        /* ---------- Text to Speech (Voice Reply) ---------- */
+        /* =========================================================
+           TEXT TO SPEECH (Voice Reply)
+        ========================================================= */
         const synth = window.speechSynthesis;
         let voices = [];
 
-        function loadVoices() {
-            if (synth) voices = synth.getVoices();
-        }
+        function loadVoices() { if (synth) voices = synth.getVoices(); }
         if (synth) {
             loadVoices();
             synth.onvoiceschanged = loadVoices;
@@ -235,19 +400,40 @@
                 || null;
         }
 
-        function speak(text) {
-            if (!synth || !text) return;
+        function speak(text, onDone) {
+            if (!synth || !text) { if (onDone) onDone(); return; }
             synth.cancel();
+            // নিজের কণ্ঠ যেন নিজে না শোনে, তাই বলার সময় শোনা বন্ধ
+            if (mode === "command" || mode === "live") stopRec();
             const utterance = new SpeechSynthesisUtterance(text);
             utterance.lang = VOICE_LANG;
             const voice = pickVoice();
             if (voice) utterance.voice = voice;
-            utterance.onstart = () => { orb.classList.add("speaking"); setStatus("Speaking..."); };
-            utterance.onend = utterance.onerror = () => {
+            let finished = false;
+            const finish = () => {
+                if (finished) return;
+                finished = true;
                 orb.classList.remove("speaking");
-                setStatus("Interface Ready");
+                setStatus(idleStatus());
+                if (onDone) onDone();
+                else if (mode === "command") beginRec();
             };
+            utterance.onstart = () => { orb.classList.add("speaking"); setStatus("Speaking..."); };
+            utterance.onend = finish;
+            utterance.onerror = finish;
             synth.speak(utterance);
+        }
+
+        function stopSpeaking() {
+            if (synth) synth.cancel();
+            orb.classList.remove("speaking");
+            setStatus(idleStatus());
+        }
+
+        function setVoiceReply(on) {
+            voiceReplyOn = on;
+            speakBtn.classList.toggle("active", on);
+            speakBtn.textContent = "🔊 Voice Reply: " + (on ? "ON" : "OFF");
         }
 
         speakBtn.addEventListener("click", () => {
@@ -255,130 +441,574 @@
                 addMessage("এই ব্রাউজারে Voice Reply সমর্থিত নয়।", "jarvis");
                 return;
             }
-            voiceReplyOn = !voiceReplyOn;
-            speakBtn.classList.toggle("active", voiceReplyOn);
-            speakBtn.textContent = "🔊 Voice Reply: " + (voiceReplyOn ? "ON" : "OFF");
-            if (voiceReplyOn) {
-                speak(lastReply);   // চালু করলেই শেষ উত্তর পড়ে শোনাবে (ব্রাউজারের অডিও পারমিশনের জন্যও দরকার)
-            } else {
-                synth.cancel();
-                orb.classList.remove("speaking");
-                setStatus("Interface Ready");
-            }
+            setVoiceReply(!voiceReplyOn);
+            if (voiceReplyOn) speak(lastReply);
+            else stopSpeaking();
         });
 
-        /* ---------- Speech to Text (Voice Input) ---------- */
+        /* =========================================================
+           SPEECH RECOGNITION MANAGER (input / live / command)
+        ========================================================= */
         const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-        let recognition = null;
+        let rec = null;
 
-        if (!SpeechRecognition) {
-            voiceBtn.disabled = true;
-            voiceBtn.style.opacity = ".5";
-            addMessage("Voice Input এই ব্রাউজারে সমর্থিত নয়। Chrome-এ চেষ্টা করো বা টাইপ করো।", "jarvis");
-        } else {
-            recognition = new SpeechRecognition();
-            recognition.lang = VOICE_LANG;
-            recognition.interimResults = true;
-            recognition.continuous = false;
-            recognition.maxAlternatives = 1;
+        function updateModeUI() {
+            voiceBtn.classList.toggle("recording", mode === "input");
+            voiceBtn.textContent = mode === "input" ? "⏹ Listening..." : "🎤 Voice Input";
+            liveBtn.classList.toggle("active", mode === "live");
+            liveBtn.textContent = mode === "live" ? "🎧 Live: ON" : "🎧 Live Talk";
+            cmdBtn.classList.toggle("active", mode === "command");
+            cmdBtn.textContent = mode === "command" ? "🗣 Commands: ON" : "🗣 Voice Commands";
+            orb.classList.toggle("listening", mode === "input" || mode === "live");
+            orb.classList.toggle("cmd", mode === "command");
+            setStatus(idleStatus());
+        }
 
-            let finalTranscript = "";
+        function setMode(m) { mode = m; updateModeUI(); }
 
-            recognition.onstart = () => {
-                isListening = true;
-                finalTranscript = "";
-                voiceBtn.classList.add("recording");
-                voiceBtn.textContent = "⏹️ Listening...";
-                orb.classList.add("listening");
-                setStatus("Listening...");
-                if (synth) synth.cancel();
-            };
+        function stopRec() {
+            if (!rec) return;
+            const r = rec;
+            rec = null;
+            r.onend = null; r.onresult = null; r.onerror = null;
+            try { r.abort(); } catch (e) {}
+        }
 
-            recognition.onresult = (event) => {
+        function stopAll() {
+            stopRec();
+            if (mode === "live") closeWS();
+            setMode(null);
+        }
+
+        function beginRec() {
+            if (!SpeechRecognition || !mode) return;
+            stopRec();
+            const r = new SpeechRecognition();
+            r.lang = VOICE_LANG;
+            r.interimResults = mode !== "command";
+            r.continuous = mode === "command";
+            r.maxAlternatives = 1;
+            let finalText = "";
+
+            r.onstart = () => { if (synth) synth.cancel(); };
+
+            r.onresult = (event) => {
                 let interim = "";
                 for (let i = event.resultIndex; i < event.results.length; i++) {
                     const t = event.results[i][0].transcript;
-                    if (event.results[i].isFinal) finalTranscript += t;
-                    else interim += t;
+                    if (event.results[i].isFinal) {
+                        if (mode === "command") handleCommand(t);
+                        else finalText += t;
+                    } else {
+                        interim += t;
+                    }
                 }
-                input.value = (finalTranscript + interim).trim();
+                if (mode !== "command") input.value = (finalText + interim).trim();
             };
 
-            recognition.onerror = (event) => {
+            r.onerror = (event) => {
+                if (event.error === "aborted" || event.error === "no-speech") return;
                 let msg = "ভয়েস নেওয়া যায়নি। আবার চেষ্টা করো।";
+                let fatal = false;
                 if (event.error === "not-allowed" || event.error === "service-not-allowed") {
                     msg = "মাইক্রোফোনের পারমিশন দেওয়া হয়নি। ব্রাউজারের সেটিংসে মাইক অনুমতি দাও।";
-                } else if (event.error === "no-speech") {
-                    msg = "কোনো কথা শোনা যায়নি। আবার চেষ্টা করো।";
+                    fatal = true;
                 } else if (event.error === "network") {
-                    msg = "ইন্টারনেট সংযোগের সমস্যা। Voice Input-এর জন্য নেট লাগে।";
-                } else if (event.error === "aborted") {
-                    return;
+                    msg = "ইন্টারনেট সংযোগের সমস্যা। Voice ফিচারের জন্য নেট লাগে।";
+                    fatal = true;
                 }
                 addMessage(msg, "jarvis");
+                if (fatal) stopAll();
             };
 
-            recognition.onend = () => {
-                isListening = false;
-                voiceBtn.classList.remove("recording");
-                voiceBtn.textContent = "🎤 Voice Input";
-                orb.classList.remove("listening");
-                setStatus("Interface Ready");
-                if (AUTO_SEND_VOICE && input.value.trim()) {
-                    form.requestSubmit();
+            r.onend = () => {
+                if (rec !== r) return;
+                rec = null;
+                if (mode === "input") {
+                    setMode(null);
+                    if (AUTO_SEND_VOICE && input.value.trim()) form.requestSubmit();
+                } else if (mode === "live") {
+                    const t = (finalText || input.value).trim();
+                    if (t) { input.value = ""; liveTurn(t); }
+                    else setTimeout(() => { if (mode === "live" && !sending) beginRec(); }, 300);
+                } else if (mode === "command") {
+                    setTimeout(() => {
+                        if (mode === "command" && !rec && !sending && !(synth && synth.speaking)) beginRec();
+                    }, 300);
                 }
             };
 
-            voiceBtn.addEventListener("click", () => {
-                if (isListening) {
-                    recognition.stop();
-                    return;
+            rec = r;
+            try { r.start(); } catch (err) { console.error(err); }
+        }
+
+        function requireSpeechRecognition() {
+            if (SpeechRecognition) return true;
+            addMessage("Voice Input এই ব্রাউজারে সমর্থিত নয়। Chrome-এ চেষ্টা করো বা টাইপ করো।", "jarvis");
+            return false;
+        }
+
+        if (!SpeechRecognition) {
+            [voiceBtn, liveBtn, cmdBtn].forEach(b => { b.disabled = true; b.style.opacity = ".5"; });
+            addMessage("Voice Input এই ব্রাউজারে সমর্থিত নয়। Chrome-এ চেষ্টা করো বা টাইপ করো।", "jarvis");
+        }
+
+        /* ---- Voice Input ---- */
+        voiceBtn.addEventListener("click", () => {
+            if (!requireSpeechRecognition()) return;
+            if (mode === "input") { stopRec();
+                // stop() এর মতো আচরণ: যা শোনা হয়েছে তা পাঠানো
+                setMode(null);
+                if (AUTO_SEND_VOICE && input.value.trim()) form.requestSubmit();
+                return;
+            }
+            stopAll();
+            setMode("input");
+            beginRec();
+        });
+
+        /* ---- Live Talk ---- */
+        liveBtn.addEventListener("click", () => toggleLive());
+
+        function toggleLive(forceOn) {
+            if (!requireSpeechRecognition()) return;
+            const turnOn = forceOn !== undefined ? forceOn : mode !== "live";
+            if (!turnOn) { stopSpeaking(); stopAll(); return; }
+            stopAll();
+            stopSpeaking();
+            setMode("live");
+            if (WS_URL) connectWS();
+            beginRec();
+        }
+
+        const LIVE_STOP = ["লাইভ বন্ধ", "লাইভ বন্ধ করো", "stop live", "live off", "বন্ধ করো", "কথা বন্ধ"];
+
+        async function liveTurn(text) {
+            const t = text.toLowerCase();
+            if (LIVE_STOP.some(k => t.includes(k))) {
+                addMessage("লাইভ মোড বন্ধ করা হলো।", "jarvis");
+                stopAll();
+                return;
+            }
+            const reply = await sendMessage(text);
+            if (mode !== "live") return;
+            if (reply) speak(reply, () => { if (mode === "live") beginRec(); });
+            else beginRec();
+        }
+
+        /* ---- optional WebSocket (live mode) ---- */
+        let ws = null;
+        let wsPending = null;
+
+        function connectWS() {
+            if (!WS_URL) return Promise.resolve(false);
+            if (ws && ws.readyState === 1) return Promise.resolve(true);
+            return new Promise((resolve) => {
+                try { ws = new WebSocket(WS_URL); } catch (e) { return resolve(false); }
+                ws.onopen = () => resolve(true);
+                ws.onerror = () => resolve(false);
+                ws.onclose = () => { ws = null; };
+                ws.onmessage = (ev) => {
+                    if (!wsPending) return;
+                    let data;
+                    try { data = JSON.parse(ev.data); } catch (e) { data = { reply: String(ev.data) }; }
+                    const p = wsPending;
+                    wsPending = null;
+                    p(data);
+                };
+            });
+        }
+
+        function closeWS() {
+            if (ws) { try { ws.close(); } catch (e) {} ws = null; }
+            wsPending = null;
+        }
+
+        /* =========================================================
+           CHAT (HTTP বা WebSocket)
+        ========================================================= */
+        async function askAI(body) {
+            if (WS_URL && mode === "live" && await connectWS()) {
+                return new Promise((resolve, reject) => {
+                    wsPending = resolve;
+                    ws.send(JSON.stringify(body));
+                    setTimeout(() => {
+                        if (wsPending === resolve) { wsPending = null; reject(new Error("WebSocket timeout")); }
+                    }, 60000);
+                });
+            }
+            const res = await fetch(API_URL, {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(body)
+            });
+            return res.json();
+        }
+
+        async function sendMessage(text) {
+            const atts = attachments.slice();
+            if (!text && !atts.length) return null;
+
+            let prompt = text || "এই ফাইল/ছবিটি দেখে ব্যাখ্যা করো।";
+            atts.filter(a => a.kind === "text").forEach(a => {
+                prompt += "\n\n[ফাইল: " + a.name + "]\n" + a.text;
+            });
+            const media = atts.filter(a => a.kind !== "text")
+                .map(a => ({ name: a.name, type: a.type, data: a.dataUrl }));
+
+            addMessage(text || "(ফাইল পাঠানো হয়েছে)", "user", atts);
+            clearAttachments();
+            setStatus("Thinking...");
+            sending = true;
+
+            const body = { prompt };
+            if (media.length) body.attachments = media;
+
+            let reply = null;
+            try {
+                const data = await askAI(body);
+                reply = data.reply || "No response generated";
+                lastReply = reply;
+                addMessage(reply, "jarvis");
+            } catch (err) {
+                console.error(err);
+                addMessage("Error connecting to server.", "jarvis");
+            }
+            sending = false;
+            setStatus(idleStatus());
+
+            // live মোডে speak() কল করে liveTurn নিজেই
+            if (reply && mode !== "live" && (voiceReplyOn || mode === "command")) speak(reply);
+            else if (mode === "command" && !rec) beginRec();
+            return reply;
+        }
+
+        form.addEventListener("submit", async (e) => {
+            e.preventDefault();
+            const text = input.value.trim();
+            if (!text && !attachments.length) return;
+            input.value = "";
+            await sendMessage(text);
+        });
+
+        function clearChat() {
+            if (synth) synth.cancel();
+            if (mode === "input") stopAll();
+            chat.replaceChildren();
+            clearAttachments();
+            lastReply = GREETING;
+            addMessage(lastReply, "jarvis");
+            orb.classList.remove("speaking");
+            setStatus(idleStatus());
+        }
+        clearBtn.addEventListener("click", clearChat);
+
+        /* =========================================================
+           FILE UPLOAD
+        ========================================================= */
+        function renderAttachments() {
+            attachBar.replaceChildren();
+            attachBar.hidden = attachments.length === 0;
+            attachments.forEach((a, i) => {
+                const chip = document.createElement("div");
+                chip.className = "chip";
+                if (a.kind === "image") {
+                    const img = document.createElement("img");
+                    img.src = a.dataUrl;
+                    img.alt = a.name;
+                    chip.appendChild(img);
                 }
+                const name = document.createElement("span");
+                name.textContent = (a.kind === "image" ? "" : "📄 ") + a.name;
+                chip.appendChild(name);
+                const rm = document.createElement("button");
+                rm.type = "button";
+                rm.textContent = "✕";
+                rm.setAttribute("aria-label", "Remove");
+                rm.addEventListener("click", () => { attachments.splice(i, 1); renderAttachments(); });
+                chip.appendChild(rm);
+                attachBar.appendChild(chip);
+            });
+        }
+
+        function clearAttachments() { attachments = []; renderAttachments(); }
+
+        function addAttachment(a) {
+            if (attachments.length >= MAX_FILES) {
+                addMessage("সর্বোচ্চ " + MAX_FILES + "টি ফাইল যোগ করা যাবে।", "jarvis");
+                return false;
+            }
+            attachments.push(a);
+            renderAttachments();
+            return true;
+        }
+
+        function readAsDataURL(blob) {
+            return new Promise((resolve, reject) => {
+                const fr = new FileReader();
+                fr.onload = () => resolve(fr.result);
+                fr.onerror = () => reject(fr.error);
+                fr.readAsDataURL(blob);
+            });
+        }
+
+        function drawScaled(source, w, h) {
+            const scale = Math.min(1, MAX_IMG_DIM / Math.max(w, h));
+            const canvas = document.createElement("canvas");
+            canvas.width = Math.round(w * scale);
+            canvas.height = Math.round(h * scale);
+            canvas.getContext("2d").drawImage(source, 0, 0, canvas.width, canvas.height);
+            return canvas.toDataURL("image/jpeg", 0.85);
+        }
+
+        function imageFileToDataURL(file) {
+            return new Promise(async (resolve) => {
                 try {
-                    recognition.start();
-                } catch (err) {
-                    console.error(err);
+                    const url = URL.createObjectURL(file);
+                    const img = new Image();
+                    img.onload = () => {
+                        const d = drawScaled(img, img.naturalWidth, img.naturalHeight);
+                        URL.revokeObjectURL(url);
+                        resolve(d);
+                    };
+                    img.onerror = async () => { URL.revokeObjectURL(url); resolve(await readAsDataURL(file)); };
+                    img.src = url;
+                } catch (e) {
+                    resolve(await readAsDataURL(file));
                 }
             });
         }
 
-        /* ---------- Chat ---------- */
-        form.addEventListener("submit", async (e) => {
-            e.preventDefault();
-            const text = input.value.trim();
-            if (!text) return;
+        const TEXT_EXT = /\.(txt|md|csv|json|xml|log|js|py|html|css|yml|yaml|ini)$/i;
 
-            addMessage(text, "user");
-            input.value = "";
-            setStatus("Thinking...");
-
+        async function handleFile(file) {
+            if (file.size > MAX_FILE_MB * 1024 * 1024) {
+                addMessage(file.name + " — ফাইলটি " + MAX_FILE_MB + "MB-এর বেশি বড়।", "jarvis");
+                return;
+            }
             try {
-                const res = await fetch(API_URL, {
-                    method: "POST",
-                    headers: { "Content-Type": "application/json" },
-                    body: JSON.stringify({ prompt: text })
-                });
-                const data = await res.json();
-                const aiReply = data.reply || "No response generated";
-                lastReply = aiReply;
-                addMessage(aiReply, "jarvis");
-                if (voiceReplyOn) speak(aiReply);
-                else setStatus("Interface Ready");
+                if (file.type.startsWith("image/")) {
+                    const dataUrl = await imageFileToDataURL(file);
+                    addAttachment({ name: file.name, type: "image/jpeg", kind: "image", dataUrl });
+                } else if (file.type.startsWith("text/") || file.type === "application/json" || TEXT_EXT.test(file.name)) {
+                    let text = await file.text();
+                    if (text.length > MAX_TEXT_CHARS) {
+                        text = text.slice(0, MAX_TEXT_CHARS) + "\n...(বাকি অংশ কেটে ফেলা হয়েছে)";
+                    }
+                    addAttachment({ name: file.name, type: file.type || "text/plain", kind: "text", text });
+                } else {
+                    const dataUrl = await readAsDataURL(file);
+                    addAttachment({ name: file.name, type: file.type || "application/octet-stream", kind: "file", dataUrl });
+                }
             } catch (err) {
                 console.error(err);
-                addMessage("Error connecting to server.", "jarvis");
-                setStatus("Interface Ready");
+                addMessage(file.name + " — ফাইলটি পড়া যায়নি।", "jarvis");
             }
+        }
+
+        uploadBtn.addEventListener("click", () => fileInput.click());
+        fileInput.addEventListener("change", async () => {
+            for (const f of Array.from(fileInput.files)) await handleFile(f);
+            fileInput.value = "";
         });
 
-        clearBtn.addEventListener("click", () => {
-            if (synth) synth.cancel();
-            if (recognition && isListening) recognition.abort();
-            chat.replaceChildren();
-            lastReply = GREETING;
-            addMessage(lastReply, "jarvis");
-            setStatus("Interface Ready");
+        /* =========================================================
+           CAMERA
+        ========================================================= */
+        const cameraModal = document.getElementById("cameraModal");
+        const cameraVideo = document.getElementById("cameraVideo");
+        let camStream = null;
+        let camFacing = "environment";
+
+        async function openCamera() {
+            if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+                addMessage("এই ব্রাউজারে ক্যামেরা সমর্থিত নয় (HTTPS দরকার)।", "jarvis");
+                return;
+            }
+            try {
+                if (camStream) camStream.getTracks().forEach(t => t.stop());
+                camStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: camFacing },
+                    audio: false
+                });
+                cameraVideo.srcObject = camStream;
+                cameraModal.hidden = false;
+            } catch (err) {
+                console.error(err);
+                let msg = "ক্যামেরা চালু করা যায়নি।";
+                if (err.name === "NotAllowedError") msg = "ক্যামেরার পারমিশন দেওয়া হয়নি। ব্রাউজার সেটিংসে অনুমতি দাও।";
+                else if (err.name === "NotFoundError") msg = "কোনো ক্যামেরা পাওয়া যায়নি।";
+                else if (err.name === "NotReadableError") msg = "ক্যামেরা অন্য অ্যাপ ব্যবহার করছে।";
+                addMessage(msg, "jarvis");
+            }
+        }
+
+        function closeCamera() {
+            if (camStream) camStream.getTracks().forEach(t => t.stop());
+            camStream = null;
+            cameraVideo.srcObject = null;
+            cameraModal.hidden = true;
+        }
+
+        function capturePhoto() {
+            if (!camStream || !cameraVideo.videoWidth) return false;
+            const dataUrl = drawScaled(cameraVideo, cameraVideo.videoWidth, cameraVideo.videoHeight);
+            addAttachment({
+                name: "photo-" + new Date().toISOString().slice(11, 19).replace(/:/g, "") + ".jpg",
+                type: "image/jpeg",
+                kind: "image",
+                dataUrl
+            });
+            closeCamera();
+            return true;
+        }
+
+        cameraBtn.addEventListener("click", openCamera);
+        document.getElementById("captureBtn").addEventListener("click", capturePhoto);
+        document.getElementById("closeCamBtn").addEventListener("click", closeCamera);
+        document.getElementById("switchCamBtn").addEventListener("click", () => {
+            camFacing = camFacing === "environment" ? "user" : "environment";
+            openCamera();
         });
+
+        /* =========================================================
+           VOICE COMMANDS (wake word: "জার্ভিস" / "Jarvis")
+        ========================================================= */
+        cmdBtn.addEventListener("click", () => toggleCommands());
+
+        function toggleCommands(forceOn) {
+            if (!requireSpeechRecognition()) return;
+            const turnOn = forceOn !== undefined ? forceOn : mode !== "command";
+            if (!turnOn) { stopAll(); return; }
+            stopAll();
+            setMode("command");
+            addMessage("ভয়েস কমান্ড চালু। বলুন: \"জার্ভিস, কমান্ড তালিকা\"", "jarvis");
+            beginRec();
+        }
+
+        function norm(s) {
+            return s.toLowerCase().replace(/[।,.!?]/g, " ").replace(/\s+/g, " ").trim();
+        }
+
+        let armedUntil = 0;
+
+        function handleCommand(raw) {
+            const t = norm(raw);
+            if (!t) return;
+            let cmd = null;
+            for (const w of WAKE_WORDS) {
+                const i = t.indexOf(w);
+                if (i !== -1) { cmd = t.slice(i + w.length).trim(); break; }
+            }
+            if (cmd === null) {
+                if (Date.now() < armedUntil) cmd = t;   // wake word বলার পর ৭ সেকেন্ড অপেক্ষা
+                else return;
+            }
+            if (!cmd) {
+                armedUntil = Date.now() + 7000;
+                setStatus("হ্যাঁ boss? বলুন...");
+                return;
+            }
+            armedUntil = 0;
+            runCommand(cmd);
+        }
+
+        const COMMANDS = [
+            { keys: ["কমান্ড তালিকা", "কমান্ড লিস্ট", "command list", "commands list", "help", "সাহায্য"],
+              run: showHelp },
+            { keys: ["কমান্ড বন্ধ", "stop commands", "শোনা বন্ধ", "শুনা বন্ধ"],
+              run: () => { addMessage("ভয়েস কমান্ড বন্ধ করা হলো।", "jarvis"); stopAll(); } },
+            { keys: ["লাইভ শুরু", "লাইভ চালু", "start live", "live on", "লাইভ কথা"],
+              run: () => toggleLive(true) },
+            { keys: ["ক্যামেরা বন্ধ", "close camera", "ক্যামেরা বন্দ"],
+              run: closeCamera },
+            { keys: ["ছবি তোলো", "ছবি তুলো", "ছবি তুল", "capture", "take photo", "take picture", "ক্লিক"],
+              run: () => { if (cameraModal.hidden) openCamera(); else capturePhoto(); } },
+            { keys: ["ক্যামেরা খোলো", "ক্যামেরা চালু", "ক্যামেরা খুল", "open camera", "camera"],
+              run: openCamera },
+            { keys: ["ভয়েস রিপ্লাই বন্ধ", "রিপ্লাই বন্ধ", "voice reply off", "reply off"],
+              run: () => { setVoiceReply(false); stopSpeaking(); addMessage("Voice Reply বন্ধ।", "jarvis"); } },
+            { keys: ["ভয়েস রিপ্লাই চালু", "রিপ্লাই চালু", "voice reply on", "reply on"],
+              run: () => { setVoiceReply(true); addMessage("Voice Reply চালু।", "jarvis"); } },
+            { keys: ["চ্যাট মুছ", "মুছে ফেলো", "clear chat", "ক্লিয়ার"],
+              run: clearChat },
+            { keys: ["শেষ উত্তর", "আবার বলো", "read last", "repeat"],
+              run: () => speak(lastReply) },
+            { keys: ["থামো", "চুপ", "stop", "স্টপ"],
+              run: stopSpeaking },
+            { keys: ["পাঠাও", "পাঠিয়ে দাও", "send"],
+              run: () => { form.requestSubmit(); } }
+        ];
+
+        function runCommand(cmd) {
+            const hit = COMMANDS.find(c => c.keys.some(k => cmd.includes(k)));
+            if (hit) { setStatus("✔ " + cmd); hit.run(); setTimeout(() => setStatus(idleStatus()), 1500); return; }
+            // কমান্ড না মিললে সাধারণ প্রশ্ন হিসেবে AI-কে পাঠানো
+            sendMessage(cmd);
+        }
+
+        function showHelp() {
+            const text =
+                "ভয়েস কমান্ড (আগে \"জার্ভিস\" বলুন):\n" +
+                "• ক্যামেরা খোলো / ছবি তোলো / ক্যামেরা বন্ধ\n" +
+                "• লাইভ শুরু\n" +
+                "• ভয়েস রিপ্লাই চালু / বন্ধ\n" +
+                "• শেষ উত্তর (আবার পড়ে শোনায়)\n" +
+                "• থামো\n" +
+                "• পাঠাও\n" +
+                "• চ্যাট মুছো\n" +
+                "• কমান্ড বন্ধ\n" +
+                "অন্য কিছু বললে সেটা AI-কে প্রশ্ন হিসেবে পাঠানো হবে।";
+            addMessage(text, "jarvis");
+            speak("কমান্ডের তালিকা চ্যাটে দেখানো হয়েছে।");
+        }
+
+        /* =========================================================
+           APP INSTALL (PWA)
+        ========================================================= */
+        const installBtn = document.getElementById("installBtn");
+        let deferredPrompt = null;
+
+        window.addEventListener("beforeinstallprompt", (e) => {
+            e.preventDefault();
+            deferredPrompt = e;
+            installBtn.hidden = false;
+        });
+
+        installBtn.addEventListener("click", async () => {
+            if (!deferredPrompt) return;
+            deferredPrompt.prompt();
+            await deferredPrompt.userChoice;
+            deferredPrompt = null;
+            installBtn.hidden = true;
+        });
+
+        window.addEventListener("appinstalled", () => {
+            installBtn.hidden = true;
+            addMessage("অ্যাপ ইনস্টল হয়ে গেছে! এখন হোম স্ক্রিন থেকে খুলতে পারবে।", "jarvis");
+        });
+
+        if ("serviceWorker" in navigator) {
+            // নতুন SW দায়িত্ব নিলে পেজ একবার নিজে রিলোড হবে, ফলে নতুন ভার্সন সাথে সাথে দেখা যাবে
+            let reloaded = false;
+            const hadController = !!navigator.serviceWorker.controller;
+            navigator.serviceWorker.addEventListener("controllerchange", () => {
+                if (!hadController || reloaded) return;
+                reloaded = true;
+                location.reload();
+            });
+            window.addEventListener("load", () => {
+                navigator.serviceWorker
+                    .register("sw.js", { updateViaCache: "none" })
+                    .then((reg) => {
+                        reg.update();
+                        document.addEventListener("visibilitychange", () => {
+                            if (!document.hidden) reg.update();
+                        });
+                    })
+                    .catch(console.error);
+            });
+        }
     </script>
 </body>
 </html>
