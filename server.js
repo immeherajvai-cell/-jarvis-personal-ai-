@@ -1,32 +1,28 @@
 require('dotenv').config();
 const express = require('express');
 const path = require('path');
+const { spawn } = require('child_process');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
 const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 const PORT = process.env.PORT || 3000;
 
+// Set ENABLE_PC_ACTIONS=true in .env ONLY on your own PC.
+// On a hosted server (e.g. Render) leave it unset so no action can ever run.
+const PC_ACTIONS_ON = process.env.ENABLE_PC_ACTIONS === 'true';
+
+// Pages allowed to call this server from a browser.
+// Add your hosted page origin here if you open the app from another domain.
+const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ||
+  'http://localhost:3000,http://127.0.0.1:3000').split(',');
+
 const systemPrompt = [
-  "সবসময় সম্ভাষণ হিসেবে 'Hey boss!",
-  "তুমি একটি সাধারণ এআই অ্যাসিস্ট্যান্ট, তবে কেউ জিজ্ঞাসা করলে তবেই নিজের পরিচয় ও শাহজালালের কথা বলবে",
-  "তোমার নাম জার্ভিস (Jarvis)। তুমি একটি পার্সোনাল এআই অ্যাসিস্ট্যান্ট।",
-  "তোমাকে তৈরি করেছেন শাহজালাল।",
-  "শাহজালাল একজন দক্ষ ডিজিটাল মার্কেটার এবং এসইও ট্রেইনি।",
-  "তার দক্ষতার ক্ষেত্রগুলো:",
-  "- ওয়ার্ডপ্রেস ও এলিমেন্টর দিয়ে প্রফেশনাল ওয়েবসাইট ডিজাইন।",
-  "- ইন-ডেপথ কিউওয়ার্ড রিসার্চ ও টেকনিক্যাল এসইও অডিট।",
-  "- নিত্যনতুন এসইও কৌশল শেখা।",
-  "- ফেসবুক পেজ ম্যানেজমেন্ট।",
-  "- লিংকডইন অ্যাকাউন্ট হ্যান্ডলিং।",
-  "- গুগল অ্যাডস ক্যাম্পেইন পরিচালনা।",
-  "- কন্টেন্ট মার্কেটিং।",
-  "- লাইভস্টক ম্যানেজমেন্ট।",
-  "তোমার উদ্ভাবক শাহজালালের এই বিষয়গুলোতে পূর্ণ ধারণা আছে, তাই তুমি যেকোনো ব্যবহারকারীকে এই ক্ষেত্রগুলোতে সাহায্য করতে প্রস্তুত।",
-  "কেউ তোমার পরিচয় বা কে তোমাকে বানিয়েছে জানতে চাইলে শাহজালাল ও তার দক্ষতার কথা তুলে ধরবে।",
-  "সবসময় পেশাদার, সহায়ক এবং বিনয়ী ভাষায় কথা বলবে।",
-  "ব্যবহারকারী যে ভাষায় লিখবে, সেই ভাষাতেই উত্তর দেবে।",
-  "কোনো বিষয় জানা না থাকলে অনুমান করে ভুল তথ্য দেবে না, বিনীতভাবে স্বীকার করবে যে তুমি জানো না।"
+  "You are Jarvis, a highly professional AI assistant.",
+  "Communicate primarily in standard, polished English, remaining professional and concise.",
+  "Only use Bengali when explicitly instructed to do so.",
+  "You possess comprehensive expertise in digital marketing, SEO, web development, and content strategy.",
+  "Always format your responses clearly without using markdown symbols like asterisks or hashes."
 ].join("\n");
 
 const MODELS = ['gemini-flash-latest', 'gemini-3.8-flash', 'gemini-flash-lite-latest'];
@@ -54,27 +50,131 @@ async function generateWithRetry(prompt) {
   throw new Error('All models busy');
 }
 
-app.use(express.json());
+/* ---------------------------------------------------------
+   PC ACTIONS (allowlist only: nothing outside this table runs)
+   Each action uses a fixed program and fixed arguments.
+   Voice text is only used to PICK an action, never executed.
+   Written for Windows; add macOS/Linux equivalents as needed.
+--------------------------------------------------------- */
+const ACTIONS = [
+  {
+    keys: ['open notepad', 'নোটপ্যাড'],
+    reply: 'Opening Notepad.',
+    run: function () { return launch('notepad.exe', []); }
+  },
+  {
+    keys: ['open calculator', 'ক্যালকুলেটর'],
+    reply: 'Opening Calculator.',
+    run: function () { return launch('calc.exe', []); }
+  },
+  {
+    keys: ['open chrome', 'ক্রোম খোলো'],
+    reply: 'Opening Chrome.',
+    run: function () { return launch('cmd', ['/c', 'start', '', 'chrome']); }
+  }
+];
+
+function launch(program, args) {
+  if (process.platform !== 'win32') {
+    throw new Error('PC actions are configured for Windows only.');
+  }
+  const child = spawn(program, args, { detached: true, stdio: 'ignore', shell: false });
+  child.on('error', function (e) { console.error('Action failed:', e.message); });
+  child.unref();
+}
+
+function normalize(s) {
+  return String(s || '').toLowerCase().replace(/[।,.!?]/g, ' ').replace(/\s+/g, ' ').trim();
+}
+
+function findAction(command) {
+  const t = normalize(command);
+  if (!t) return null;
+  return ACTIONS.find(function (a) {
+    return a.keys.some(function (k) { return t.includes(k); });
+  }) || null;
+}
+
+/* ---------------------------------------------------------
+   MIDDLEWARE
+--------------------------------------------------------- */
+app.use(express.json({ limit: '20mb' }));
+
+// Block other websites from driving this server through your browser.
+app.use(function (req, res, next) {
+  const origin = req.headers.origin;
+  if (origin) {
+    if (!ALLOWED_ORIGINS.includes(origin)) {
+      return res.status(403).json({ error: 'Origin not allowed' });
+    }
+    res.set({
+      'Access-Control-Allow-Origin': origin,
+      'Vary': 'Origin',
+      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+      'Access-Control-Allow-Headers': 'Content-Type',
+      'Access-Control-Allow-Private-Network': 'true'
+    });
+  }
+  if (req.method === 'OPTIONS') return res.sendStatus(204);
+  next();
+});
+
 app.use(express.static(path.join(__dirname, 'public')));
 
 app.get('/', function (req, res) {
   res.sendFile(path.join(__dirname, 'public', 'index.html'));
 });
 
-app.post('/api/chat', async function (req, res) {
-  const prompt = req.body.prompt;
-  if (!prompt) {
-    return res.status(400).json({ error: 'prompt is required' });
-  }
+/* ---------------------------------------------------------
+   ROUTES
+--------------------------------------------------------- */
+async function handleChat(prompt, res) {
   try {
     const reply = await generateWithRetry(prompt);
     res.json({ reply: reply });
   } catch (error) {
     console.error(error);
-    res.status(503).json({ error: 'AI এখন ব্যস্ত, একটু পরে আবার চেষ্টা করুন' });
+    res.status(503).json({ error: 'The AI is busy right now. Please try again shortly.' });
   }
+}
+
+// Used by the JARVIS app: runs an allowlisted PC action, otherwise asks the AI.
+app.post('/command', async function (req, res) {
+  const command = (req.body.command || '').trim();
+  const prompt = req.body.prompt || command;
+  if (!prompt) {
+    return res.status(400).json({ error: 'command is required' });
+  }
+
+  if (PC_ACTIONS_ON && command) {
+    const action = findAction(command);
+    if (action) {
+      try {
+        action.run();
+        return res.json({ reply: action.reply, action: true });
+      } catch (error) {
+        console.error(error);
+        return res.status(500).json({ error: error.message });
+      }
+    }
+  }
+
+  // Attachments are accepted by the app but not forwarded to the model here.
+  await handleChat(prompt, res);
 });
 
-app.listen(PORT, function () {
-  console.log('Server is running on port ' + PORT);
+// Kept for backward compatibility with the old app version.
+app.post('/api/chat', async function (req, res) {
+  const prompt = req.body.prompt;
+  if (!prompt) {
+    return res.status(400).json({ error: 'prompt is required' });
+  }
+  await handleChat(prompt, res);
+});
+
+// Local-only binding when PC actions are on; normal binding when hosted.
+const HOST = PC_ACTIONS_ON ? '127.0.0.1' : '0.0.0.0';
+app.listen(PORT, HOST, function () {
+  console.log('Server is running on ' + HOST + ':' + PORT +
+    (PC_ACTIONS_ON ? ' (PC actions ON)' : ' (PC actions OFF)'));
 });
