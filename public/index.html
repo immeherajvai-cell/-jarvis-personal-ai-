@@ -296,7 +296,7 @@
 
         <p class="note">Voice Input: বোতাম চাপুন, বলুন, কথা পাঠিয়ে দেওয়া হবে। Live Talk: মুখে কথোপকথন চলতে থাকবে। Voice Commands: "জার্ভিস" বলে কমান্ড দিন (যেমন: "জার্ভিস ক্যামেরা খোলো")। সব ভয়েস ফিচার ব্রাউজারের মাইক পারমিশন ও ইন্টারনেট চায় (Chrome সবচেয়ে ভালো)।</p>
 
-        <footer>JARVIS Personal AI - Version 1.3</footer>
+        <footer>JARVIS Personal AI - Version 1.4</footer>
     </main>
 
     <!-- Camera -->
@@ -313,8 +313,10 @@
         /* =========================================================
            CONFIG
         ========================================================= */
-        const API_URL = "https://jarvis-personal-ai.onrender.com/api/chat";
-        const WS_URL = "";                    // ঐচ্ছিক: লাইভ মোডের জন্য WebSocket, যেমন "wss://jarvis-personal-ai.onrender.com/ws"
+        const API_URL = "http://localhost:3000/command";
+        const REQUEST_TIMEOUT_MS = 15000;     // সাধারণ কমান্ডের টাইমআউট
+        const UPLOAD_TIMEOUT_MS = 60000;      // ছবি/ফাইলসহ রিকোয়েস্টের টাইমআউট
+        const WS_URL = "";                    // ঐচ্ছিক: লাইভ মোডের জন্য WebSocket, যেমন "ws://localhost:3000/ws"
         const VOICE_LANG = "bn-BD";           // বাংলা; ইংরেজির জন্য "en-US"
         const AUTO_SEND_VOICE = true;         // Voice Input শেষে নিজে থেকে Send
         const WAKE_WORDS = ["jarvis", "জার্ভিস", "জারভিস", "জার্বিস", "জারবিস", "যারভিস", "যার্ভিস"];
@@ -625,27 +627,77 @@
         }
 
         /* =========================================================
-           CHAT (HTTP বা WebSocket)
+           SERVER REQUEST (timeout + error handling)
         ========================================================= */
+        class ApiError extends Error {
+            constructor(kind, message) { super(message); this.kind = kind; }
+        }
+
+        async function fetchWithTimeout(url, options, timeoutMs) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), timeoutMs);
+            try {
+                return await fetch(url, { ...options, signal: controller.signal });
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+
+        async function callServer(body, timeoutMs) {
+            let res;
+            try {
+                res = await fetchWithTimeout(API_URL, {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify(body)
+                }, timeoutMs);
+            } catch (err) {
+                if (err.name === "AbortError") {
+                    throw new ApiError("timeout", "সার্ভার " + Math.round(timeoutMs / 1000) + " সেকেন্ডে উত্তর দেয়নি। আবার চেষ্টা করো।");
+                }
+                throw new ApiError("network", "লোকাল সার্ভারে সংযোগ হয়নি। localhost:3000 চালু আছে কিনা এবং CORS ঠিক আছে কিনা দেখো।");
+            }
+
+            let raw = "";
+            try { raw = await res.text(); } catch (e) {}
+            let data;
+            try { data = raw ? JSON.parse(raw) : {}; }
+            catch (e) { data = { reply: raw }; }          // JSON না হলে সাধারণ টেক্সট ধরা হবে
+
+            if (!res.ok) {
+                const detail = data && (data.error || data.message);
+                throw new ApiError("http", "সার্ভার ত্রুটি (" + res.status + ")" + (detail ? ": " + detail : ""));
+            }
+            return data || {};
+        }
+
         async function askAI(body) {
+            const timeoutMs = body.attachments ? UPLOAD_TIMEOUT_MS : REQUEST_TIMEOUT_MS;
+
             if (WS_URL && mode === "live" && await connectWS()) {
                 return new Promise((resolve, reject) => {
                     wsPending = resolve;
                     ws.send(JSON.stringify(body));
                     setTimeout(() => {
-                        if (wsPending === resolve) { wsPending = null; reject(new Error("WebSocket timeout")); }
-                    }, 60000);
+                        if (wsPending === resolve) { wsPending = null; reject(new ApiError("timeout", "WebSocket সময়মতো উত্তর দেয়নি।")); }
+                    }, timeoutMs);
                 });
             }
-            const res = await fetch(API_URL, {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify(body)
-            });
-            return res.json();
+            return callServer(body, timeoutMs);
         }
 
-        async function sendMessage(text) {
+        /* =========================================================
+           CHAT (কমান্ডগুলো একটার পর একটা চলে)
+        ========================================================= */
+        let sendQueue = Promise.resolve();
+
+        function sendMessage(text) {
+            const job = sendQueue.then(() => doSend(text));
+            sendQueue = job.catch(() => {});
+            return job;
+        }
+
+        async function doSend(text) {
             const atts = attachments.slice();
             if (!text && !atts.length) return null;
 
@@ -658,24 +710,31 @@
 
             addMessage(text || "(ফাইল পাঠানো হয়েছে)", "user", atts);
             clearAttachments();
-            setStatus("Thinking...");
+            setStatus("Sending...");
             sending = true;
 
-            const body = { prompt };
+            const body = {
+                command: text || "",            // সার্ভার এটা দিয়ে অ্যাকশন বুঝবে
+                prompt,                         // ফাইলসহ পূর্ণ টেক্সট
+                source: mode || "text"          // "text" | "input" | "live" | "command"
+            };
             if (media.length) body.attachments = media;
 
             let reply = null;
             try {
                 const data = await askAI(body);
-                reply = data.reply || "No response generated";
+                reply = data.reply || data.message || data.result || data.output || "ঠিক আছে boss, কমান্ড পাঠানো হয়েছে।";
                 lastReply = reply;
                 addMessage(reply, "jarvis");
             } catch (err) {
                 console.error(err);
-                addMessage("Error connecting to server.", "jarvis");
+                addMessage(err instanceof ApiError ? err.message : "সার্ভারে সংযোগে সমস্যা হয়েছে।", "jarvis");
+                setStatus("Error");
+                await new Promise(r => setTimeout(r, 1200));
+            } finally {
+                sending = false;
+                setStatus(idleStatus());
             }
-            sending = false;
-            setStatus(idleStatus());
 
             // live মোডে speak() কল করে liveTurn নিজেই
             if (reply && mode !== "live" && (voiceReplyOn || mode === "command")) speak(reply);
@@ -943,7 +1002,7 @@
         function runCommand(cmd) {
             const hit = COMMANDS.find(c => c.keys.some(k => cmd.includes(k)));
             if (hit) { setStatus("✔ " + cmd); hit.run(); setTimeout(() => setStatus(idleStatus()), 1500); return; }
-            // কমান্ড না মিললে সাধারণ প্রশ্ন হিসেবে AI-কে পাঠানো
+            // কমান্ড না মিললে লোকাল সার্ভারে পাঠানো (PC-তে অ্যাকশনের জন্য)
             sendMessage(cmd);
         }
 
@@ -958,7 +1017,7 @@
                 "• পাঠাও\n" +
                 "• চ্যাট মুছো\n" +
                 "• কমান্ড বন্ধ\n" +
-                "অন্য কিছু বললে সেটা AI-কে প্রশ্ন হিসেবে পাঠানো হবে।";
+                "অন্য কিছু বললে সেটা লোকাল সার্ভারে (PC) কমান্ড হিসেবে পাঠানো হবে।";
             addMessage(text, "jarvis");
             speak("কমান্ডের তালিকা চ্যাটে দেখানো হয়েছে।");
         }
