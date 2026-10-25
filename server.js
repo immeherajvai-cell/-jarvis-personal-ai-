@@ -1,21 +1,23 @@
 require('dotenv').config();
 const express = require('express');
-const cors = require('cors');
 const path = require('path');
 const { spawn } = require('child_process');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
-app.use(cors());
+
+// Gemini client (set GEMINI_API_KEY in .env locally and in Render's environment).
+const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
 
 // Set ENABLE_PC_ACTIONS=true in .env ONLY on your own PC.
 // On a hosted server (e.g. Render) leave it unset so no action can ever run.
 const PC_ACTIONS_ON = process.env.ENABLE_PC_ACTIONS === 'true';
 
-// Pages allowed to call this server from a browser.
-// Add your hosted page origin here if you open the app from another domain.
+// CORS is open to every origin, so the hosted frontend never gets a 403.
+// This list is ONLY used to decide which pages may trigger PC actions
+// (opening Notepad, Calculator, Chrome). Other origins still get normal AI chat.
 const ALLOWED_ORIGINS = (process.env.ALLOWED_ORIGINS ||
-  'http://localhost:3000,http://127.0.0.1:3000').split(',');
+  'http://localhost:3000,http://127.0.0.1:3000,https://jarvis-personal-ai.onrender.com').split(',');
 
 const systemPrompt = [
   "You are Jarvis, a highly professional AI assistant.",
@@ -100,21 +102,15 @@ function findAction(command) {
 --------------------------------------------------------- */
 app.use(express.json({ limit: '20mb' }));
 
-// Block other websites from driving this server through your browser.
+// CORS: any origin may call this server (no more 403s from the hosted frontend).
 app.use(function (req, res, next) {
-  const origin = req.headers.origin;
-  if (origin) {
-    if (!ALLOWED_ORIGINS.includes(origin)) {
-      return res.status(403).json({ error: 'Origin not allowed' });
-    }
-    res.set({
-      'Access-Control-Allow-Origin': origin,
-      'Vary': 'Origin',
-      'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
-      'Access-Control-Allow-Headers': 'Content-Type',
-      'Access-Control-Allow-Private-Network': 'true'
-    });
-  }
+  res.set({
+    'Access-Control-Allow-Origin': '*',
+    'Access-Control-Allow-Methods': 'POST, GET, OPTIONS',
+    'Access-Control-Allow-Headers': 'Content-Type',
+    // Lets an https page (e.g. the Render-hosted app) reach http://localhost
+    'Access-Control-Allow-Private-Network': 'true'
+  });
   if (req.method === 'OPTIONS') return res.sendStatus(204);
   next();
 });
@@ -146,7 +142,12 @@ app.post('/command', async function (req, res) {
     return res.status(400).json({ error: 'command is required' });
   }
 
-  if (PC_ACTIONS_ON && command) {
+  // PC actions only run when enabled AND the request comes from a trusted page.
+  // Requests from any other website fall through to normal AI chat.
+  const origin = req.headers.origin;
+  const trusted = !origin || ALLOWED_ORIGINS.includes(origin);
+
+  if (PC_ACTIONS_ON && trusted && command) {
     const action = findAction(command);
     if (action) {
       try {
@@ -163,7 +164,7 @@ app.post('/command', async function (req, res) {
   await handleChat(prompt, res);
 });
 
-// Kept for backward compatibility with the old app version.
+// Used by the Render fallback and the old app version.
 app.post('/api/chat', async function (req, res) {
   const prompt = req.body.prompt;
   if (!prompt) {
@@ -173,9 +174,9 @@ app.post('/api/chat', async function (req, res) {
 });
 
 // Local-only binding when PC actions are on; normal binding when hosted.
- const PORT = process.env.PORT || 3000;
+const PORT = process.env.PORT || 3000;
 const HOST = PC_ACTIONS_ON ? '127.0.0.1' : '0.0.0.0';
 app.listen(PORT, HOST, function () {
-   console.log('Server is running on ' + HOST + ':' + PORT +
+  console.log('Server is running on ' + HOST + ':' + PORT +
     (PC_ACTIONS_ON ? ' (PC actions ON)' : ' (PC actions OFF)'));
 });
