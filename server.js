@@ -1,12 +1,12 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');
 const path = require('path');
 const { spawn } = require('child_process');
 const { GoogleGenerativeAI } = require('@google/generative-ai');
 
 const app = express();
-const genAI = new GoogleGenerativeAI(process.env.GEMINI_API_KEY);
-const PORT = process.env.PORT || 3000;
+app.use(cors());
 
 // Set ENABLE_PC_ACTIONS=true in .env ONLY on your own PC.
 // On a hosted server (e.g. Render) leave it unset so no action can ever run.
