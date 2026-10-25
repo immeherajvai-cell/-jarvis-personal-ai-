@@ -173,9 +173,9 @@ app.post('/api/chat', async function (req, res) {
 });
 
 // Local-only binding when PC actions are on; normal binding when hosted.
+ const PORT = process.env.PORT || 3000;
 const HOST = PC_ACTIONS_ON ? '127.0.0.1' : '0.0.0.0';
 app.listen(PORT, HOST, function () {
-  const PORT = process.env.PORT || 3000;
-  console.log('Server is running on ' + HOST + ':' + PORT +
+   console.log('Server is running on ' + HOST + ':' + PORT +
     (PC_ACTIONS_ON ? ' (PC actions ON)' : ' (PC actions OFF)'));
 });
